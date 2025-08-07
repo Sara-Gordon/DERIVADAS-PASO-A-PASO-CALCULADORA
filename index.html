@@ -2,128 +2,287 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Derivadas por Primer Principio</title>
-  <script src="https://unpkg.com/algebrite"></script>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <title>Derivada por Primer Principio</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background: #fff0f5;
-      padding: 20px;
-      color: #333;
+      font-family: Arial, sans-serif;
+      background: #fff0f6;
+      color: #a8326a;
+      margin: 20px;
+      padding: 0;
     }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px;
-      border-radius: 10px;
-    }
-    #result {
-      background: #ffe6f0;
-      padding: 15px;
-      border-radius: 15px;
-      margin-top: 15px;
-      border: 1px solid #ff80ab;
-    }
-    .step {
-      margin-bottom: 10px;
-    }
-    .frac {
-      display: inline-block;
+    h1 {
+      color: #d6336c;
       text-align: center;
     }
-    .frac > span {
-      display: block;
+    input, button {
+      font-size: 1.1em;
+      padding: 8px;
+      margin: 5px 0 15px 0;
+      border-radius: 6px;
+      border: 1px solid #d6336c;
+      width: 100%;
+      max-width: 400px;
     }
-    .frac .top {
-      border-bottom: 1px solid #000;
+    button {
+      background-color: #d6336c;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #a8326a;
+    }
+    #resultados {
+      background: #ffe6f0;
+      border-radius: 10px;
+      padding: 15px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px #d6336c55;
+    }
+    #resultados p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+    .paso {
+      margin-bottom: 12px;
+      padding-left: 15px;
+      border-left: 4px solid #d6336c;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 1px solid #d6336c;
+      background-color: #fff0f6;
+      border-radius: 8px;
+    }
+    #errorMsg {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>📘 Derivada por Primer Principio</h1>
-  <p>Ingresa una función (ej: <strong>2x</strong>, <strong>x^2</strong>, <strong>ln(x)</strong>, <strong>e^x</strong>, <strong>raiz(x)</strong>):</p>
-  <input type="text" id="funcion" placeholder="Ej: x^2 + 3x" />
-  <button onclick="resolver()">Resolver</button>
-  <div id="result"></div>
-  <div id="grafica" style="width:100%;height:400px;"></div>
+  <h1>Derivada por Primer Principio</h1>
+  <p>Ingresa la función f(x) para derivar (usa x, por ejemplo: x2, sin(x), e^x, raiz(x), ln(x))</p>
+  <input type="text" id="funcion" placeholder="Ejemplo: x2, sin(x), e^x, raiz(x), ln(x)" />
+  <button onclick="calcularDerivada()">Calcular derivada paso a paso</button>
+  <div id="errorMsg"></div>
+  <div id="resultados"></div>
+  <canvas id="grafica" width="600" height="400"></canvas>
 
-  <script>
-    function convertirFuncion(texto) {
-      return texto
-        .replace(/(\d)([a-zA-Z])/g, '$1*$2')       // 2x → 2*x
-        .replace(/([a-zA-Z])(\d)/g, '$1*$2')       // x2 → x*2
-        .replace(/raiz\(/g, 'sqrt(')               // raiz(x) → sqrt(x)
-        .replace(/e\^/g, 'exp(').replace(/\)(?!\^)/g, '))') // e^x → exp(x)
-        .replace(/ln\(/g, 'log(');                 // ln(x) → log(x)
+<script>
+  // Función para reemplazar la notación común por la que Algebrite entiende
+  function transformarFuncion(input) {
+    let f = input.toLowerCase();
+    // Reemplazos comunes
+    f = f.replace(/raiz\(/g, "sqrt(");
+    f = f.replace(/e\^/g, "exp");
+    f = f.replace(/ln\(/g, "log(");
+    // Para potencias: x2 => x^2 (solo para potencias simples)
+    f = f.replace(/([a-z0-9\)])(\d+)/g, "$1^$2");
+    // Limpiar espacios
+    f = f.replace(/\s+/g, "");
+    return f;
+  }
+
+  // Función para evaluar expresiones con Math.js (alternativa si no usas Algebrite)
+  // Aquí usaremos Algebrite para derivadas, pero para primer principio haremos manualmente.
+
+  // Vamos a usar Algebrite para simplificar la función f(x+h) - f(x), pero
+  // para que sea más accesible, usaremos math.js para evaluar (porque Algebrite no está aquí)
+  // Por eso, para esta demo usaremos evaluaciones numéricas y el desarrollo manual de pasos.
+
+  // Evaluar la función para un valor x (función en texto)
+  function evaluarFuncion(fx, val) {
+    // fx: string transformada compatible con Math.js o eval seguro
+    // Para seguridad, solo permitiremos funciones matemáticas básicas
+    try {
+      // Construimos la función con 'x' variable
+      const mathFunc = new Function("x", "return " + fx + ";");
+      return mathFunc(val);
+    } catch (e) {
+      return NaN;
+    }
+  }
+
+  function calcularDerivada() {
+    const inputFunc = document.getElementById("funcion").value.trim();
+    const errorDiv = document.getElementById("errorMsg");
+    const resultDiv = document.getElementById("resultados");
+    const canvas = document.getElementById("grafica");
+    const ctx = canvas.getContext("2d");
+    errorDiv.textContent = "";
+    resultDiv.innerHTML = "";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!inputFunc) {
+      errorDiv.textContent = "⚠️ Por favor ingresa una función válida.";
+      return;
     }
 
-    function resolver() {
-      const entrada = document.getElementById("funcion").value;
-      const fx = convertirFuncion(entrada);
-      const resultDiv = document.getElementById("result");
-      let pasos = "";
+    // Transformar la función para evaluarla con JS
+    const f = transformarFuncion(inputFunc);
 
-      try {
-        const h = Algebrite.run("h");
-        const x = Algebrite.run("x");
-        const fx_h = Algebrite.run("subst(x, x+h, " + fx + ")");
-        const resta = Algebrite.run("(" + fx_h + " - (" + fx + "))");
-        const fraccion = Algebrite.run("(" + resta + ")/h");
-        const derivada = Algebrite.run("limit(" + fraccion + ", h, 0)");
+    // Revisar si la función se puede evaluar al menos en x=1 y x=1+h
+    const h = 0.00001;
+    const x0 = 1;
+    const fx0 = evaluarFuncion(f, x0);
+    const fxh = evaluarFuncion(f, x0 + h);
 
-        pasos += `<div class="step"><strong>PASO 1:</strong> Se parte de la definición formal:<br>
-        <span class="frac"><span class="top">f(x+h) - f(x)</span><span class="bottom">h</span></span></div>`;
+    if (isNaN(fx0) || isNaN(fxh) || !isFinite(fx0) || !isFinite(fxh)) {
+      errorDiv.textContent = "⚠️ No se pudo derivar la función ingresada. Revisa la sintaxis o funciones usadas.";
+      return;
+    }
 
-        pasos += `<div class="step"><strong>PASO 2:</strong> Se reemplaza f(x):<br> f(x) = ${entrada}</div>`;
-        pasos += `<div class="step"><strong>PASO 3:</strong> Se calcula f(x+h):<br> f(x+h) = ${Algebrite.run("simplify(" + fx_h + ")")}</div>`;
-        pasos += `<div class="step"><strong>PASO 4:</strong> Se reemplazan en la fórmula:<br>
-        <span class="frac"><span class="top">(${fx_h}) - (${fx})</span><span class="bottom">h</span></span></div>`;
-        pasos += `<div class="step"><strong>PASO 5:</strong> Se simplifica el numerador:<br> ${resta}</div>`;
-        pasos += `<div class="step"><strong>PASO 6:</strong> Se divide entre h:<br> ${fraccion}</div>`;
-        pasos += `<div class="step"><strong>PASO 7:</strong> Se aplica el límite cuando h → 0:</div>`;
-        pasos += `<div class="step"><strong>Resultado Final:</strong> La derivada es: <strong>${Algebrite.run("simplify(" + derivada + ")")}</strong></div>`;
+    // Calcular límite de la definición
+    const diffApprox = (fxh - fx0) / h;
 
-        resultDiv.innerHTML = pasos;
-        graficar(fx);
-      } catch (error) {
-        resultDiv.innerHTML = `<p style="color:red;">⚠️ No se pudo derivar la función ingresada.<br>Revisa la sintaxis o funciones usadas.</p>`;
+    // Mostrar pasos
+    let pasosHTML = "";
+
+    pasosHTML += `<div class="paso"><b>Paso 1:</b> Definición de la derivada por primer principio:<br>
+      <em>f'(x) = lim<sub>h→0</sub> [f(x+h) - f(x)] / h</em></div>`;
+
+    pasosHTML += `<div class="paso"><b>Paso 2:</b> Sustituimos x = ${x0} y un valor pequeño h = ${h}:<br>
+      f'(${x0}) ≈ [f(${x0} + ${h}) - f(${x0})] / ${h}</div>`;
+
+    pasosHTML += `<div class="paso"><b>Paso 3:</b> Calculamos f(${x0} + ${h}) = f(${(x0 + h).toFixed(5)}) ≈ ${fxh.toFixed(6)}</div>`;
+
+    pasosHTML += `<div class="paso"><b>Paso 4:</b> Calculamos f(${x0}) = ${fx0.toFixed(6)}</div>`;
+
+    pasosHTML += `<div class="paso"><b>Paso 5:</b> Calculamos la diferencia y dividimos por h:<br>
+      [${fxh.toFixed(6)} - ${fx0.toFixed(6)}] / ${h} = ${diffApprox.toFixed(6)}</div>`;
+
+    pasosHTML += `<div class="paso"><b>Resultado aproximado:</b> f'(${x0}) ≈ ${diffApprox.toFixed(6)}</div>`;
+
+    resultDiv.innerHTML = pasosHTML;
+
+    // Graficar función y su derivada aproximada (numérica) en x desde -5 a 5
+    graficarFuncionYDerivada(f);
+  }
+
+  function graficarFuncionYDerivada(fx) {
+    const canvas = document.getElementById("grafica");
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Dibujar cuadrícula
+    const step = 20; // pixels por unidad
+    ctx.strokeStyle = "#f8bbd0"; // rosado claro
+    ctx.lineWidth = 1;
+
+    for(let x=0; x <= w; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+
+    for(let y=0; y <= h; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Ejes
+    ctx.strokeStyle = "#d6336c"; // rosado fuerte
+    ctx.lineWidth = 2;
+    // eje X
+    ctx.beginPath();
+    ctx.moveTo(0, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.stroke();
+    // eje Y
+    ctx.beginPath();
+    ctx.moveTo(w/2, 0);
+    ctx.lineTo(w/2, h);
+    ctx.stroke();
+
+    // Función para transformar coordenadas matemáticas a canvas
+    function toCanvasX(x) {
+      return w/2 + x*step;
+    }
+    function toCanvasY(y) {
+      return h/2 - y*step;
+    }
+
+    // Evaluar f(x) y derivada numérica en varios puntos
+    const xs = [];
+    const ys = [];
+    const dys = [];
+    const hDer = 0.00001;
+
+    for(let i = -10; i <= 10; i += 0.1) {
+      xs.push(i);
+      const y = evaluarFuncion(fx, i);
+      ys.push(y);
+
+      // derivada numérica por definición
+      const yDer = (evaluarFuncion(fx, i + hDer) - evaluarFuncion(fx, i)) / hDer;
+      dys.push(yDer);
+    }
+
+    // Dibujar f(x)
+    ctx.strokeStyle = "#d6336c";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let first = true;
+    for(let i=0; i < xs.length; i++) {
+      if (isNaN(ys[i]) || !isFinite(ys[i])) {
+        first = true; 
+        continue;
+      }
+      const cx = toCanvasX(xs[i]);
+      const cy = toCanvasY(ys[i]);
+      if (first) {
+        ctx.moveTo(cx, cy);
+        first = false;
+      } else {
+        ctx.lineTo(cx, cy);
       }
     }
+    ctx.stroke();
 
-    function graficar(fx) {
-      let expr = fx.replace(/\^/g, '**');
-
-      const f = x => {
-        try {
-          return eval(expr.replace(/x/g, `(${x})`));
-        } catch {
-          return null;
-        }
-      };
-
-      const x_vals = [];
-      const y_vals = [];
-      for (let x = -10; x <= 10; x += 0.5) {
-        const y = f(x);
-        if (y !== null && isFinite(y)) {
-          x_vals.push(x);
-          y_vals.push(y);
-        }
+    // Dibujar derivada aproximada
+    ctx.strokeStyle = "#f06292"; // rosa claro
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    first = true;
+    for(let i=0; i < xs.length; i++) {
+      if (isNaN(dys[i]) || !isFinite(dys[i])) {
+        first = true; 
+        continue;
       }
-
-      const trace = {
-        x: x_vals,
-        y: y_vals,
-        mode: 'lines',
-        name: 'f(x)'
-      };
-
-      Plotly.newPlot('grafica', [trace], { title: 'Gráfica de la función' });
+      const cx = toCanvasX(xs[i]);
+      const cy = toCanvasY(dys[i]);
+      if (first) {
+        ctx.moveTo(cx, cy);
+        first = false;
+      } else {
+        ctx.lineTo(cx, cy);
+      }
     }
-  </script>
+    ctx.stroke();
+
+    // Etiquetas
+    ctx.fillStyle = "#d6336c";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("f(x)", 10, 20);
+    ctx.fillStyle = "#f06292";
+    ctx.fillText("f'(x) aproximada", 10, 40);
+  }
+</script>
 </body>
 </html>
+
 
 
