@@ -1,137 +1,128 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Derivadas por Primer Principio</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Derivadas paso a paso</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/algebrite/1.5.0/algebrite.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f9f4fb;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: #fff0f6;
       color: #333;
     }
     h1 {
-      color: #c71585;
+      color: #d63384;
     }
     input, button {
       padding: 10px;
-      margin: 10px 0;
       font-size: 16px;
+      margin: 10px 0;
     }
-    #pasos {
-      background-color: #fff0f5;
-      border-left: 5px solid #c71585;
+    .resultado {
+      background: #fff;
+      border-left: 4px solid #d63384;
       padding: 15px;
       margin-top: 20px;
-      white-space: pre-wrap;
     }
     canvas {
       margin-top: 30px;
+      background: #fff;
+      border: 1px solid #ccc;
+    }
+    .error {
+      color: red;
     }
   </style>
 </head>
-
 <body>
-  <h1>Calculadora de Derivadas por Primer Principio</h1>
-  <label for="funcion">Ingresa una función:</label><br />
-  <input type="text" id="funcion" placeholder="Ej: raiz(x), ln(x), e^x, x^2" size="40" />
-  <br />
-  <button onclick="resolverDerivada()">Calcular derivada</button>
-  <div id="pasos"></div>
-  <canvas id="grafico" width="400" height="300"></canvas>
+  <h1>Derivadas paso a paso (por primer principio)</h1>
+  <p>Ingresa una función en términos de <strong>x</strong> (usa: <code>x2</code>, <code>raiz(x)</code>, <code>e^x</code>, <code>ln(x)</code>):</p>
+  <input type="text" id="funcion" placeholder="Ej: x2 + 2x + 1" size="40">
+  <button onclick="calcularDerivada()">Derivar</button>
+  <div id="resultado" class="resultado"></div>
+  <canvas id="grafica" width="500" height="300"></canvas>
 
   <script>
-    function reemplazarFunciones(texto) {
-      return texto
-        .replace(/\b(raiz)\s*\(x\)/gi, 'sqrt(x)')
-        .replace(/\be\^x\b/gi, 'exp(x)')
-        .replace(/\bln\s*\(/gi, 'log(')
-        .replace(/(\d)(x)/gi, '$1*$2')
-        .replace(/\^/g, '**');
+    function transformarFuncion(func) {
+      return func
+        .replace(/(\d)([a-zA-Z])/g, '$1*$2')        // 2x → 2*x
+        .replace(/([a-zA-Z])(\d)/g, '$1*$2')        // x2 → x*2
+        .replace(/\^/g, '**')                       // ^ → **
+        .replace(/raiz\(/gi, 'sqrt(')               // raiz(x) → sqrt(x)
+        .replace(/e\*\*/gi, 'exp(').replace(/exp\((.*?)\)/g, 'exp($1)') // e^x → exp(x)
+        .replace(/ln\(/gi, 'log(');                 // ln(x) → log(x)
     }
 
-    function resolverDerivada() {
-      const inputOriginal = document.getElementById("funcion").value.trim();
-      if (!inputOriginal) return alert("Ingresa una función válida.");
-
-      const input = reemplazarFunciones(inputOriginal);
-      let pasosDiv = document.getElementById("pasos");
-      let fx;
+    function calcularDerivada() {
+      const entrada = document.getElementById('funcion').value.trim();
+      const funcionOriginal = entrada;
+      const f = transformarFuncion(entrada);
 
       try {
-        fx = Algebrite.run(input);
-        const h = "h";
-        const x = "x";
-        const fxh = Algebrite.run(`subst(${x}+${h},${x},${fx})`);
-        const resta = Algebrite.run(`(${fxh})-(${fx})`);
-        const fraccion = Algebrite.run(`(${resta})/${h}`);
-        const limite = Algebrite.run(`limit((${fraccion}), ${h}, 0)`);
+        const fxh = f.replace(/x/g, '(x+h)');
+        const paso1 = `f(x) = ${f}`;
+        const paso2 = `f(x+h) = ${fxh}`;
+        const paso3 = `f(x+h) - f(x) = (${fxh}) - (${f})`;
+        const paso4 = `\\frac{f(x+h) - f(x)}{h} = \\frac{(${fxh}) - (${f})}{h}`;
+        const paso5 = `Aplicamos el límite cuando h tiende a 0:`;
+        const paso6 = `\\lim_{h \\to 0} \\frac{(${fxh}) - (${f})}{h}`;
+        const paso7 = Algebrite.simplify(`(${fxh}) - (${f})`).toString();
+        const paso8 = Algebrite.simplify(`(${paso7}) / h`).toString();
+        const derivada = Algebrite.simplify(`limit((${paso7}) / h, h, 0)`).toString();
 
-        let pasos = `PASOS PARA DERIVAR SEGÚN EL PRIMER PRINCIPIO:\n`;
-        pasos += `1. Se parte de la definición formal de derivada:\n`;
-        pasos += `    f'(x) = lim(h→0) [f(x+h) - f(x)] / h\n\n`;
-        pasos += `2. Se reemplaza f(x) por la función ingresada:\n`;
-        pasos += `    f(x) = ${fx}\n\n`;
-        pasos += `3. Se calcula f(x+h):\n`;
-        pasos += `    f(x+h) = ${fxh}\n\n`;
-        pasos += `4. Se resta f(x+h) - f(x):\n`;
-        pasos += `    ${fxh} - (${fx}) = ${resta}\n\n`;
-        pasos += `5. Se forma la fracción (f(x+h) - f(x)) / h:\n`;
-        pasos += `    (${resta}) / h = ${fraccion}\n\n`;
-        pasos += `6. Se aplica el límite cuando h tiende a 0:\n`;
-        pasos += `    lim(h→0) [${fraccion}] = ${limite}\n\n`;
-        pasos += `7. El resultado de este límite es la derivada f'(x):\n`;
-        pasos += `    f'(x) = ${limite}\n\n`;
-        pasos += `8. La derivada de ${fx} es: ${limite}`;
+        document.getElementById('resultado').innerHTML = `
+          <p><strong>PASO 1:</strong> Definimos la función:<br>\\( f(x) = ${Algebrite.run(f)} \\)</p>
+          <p><strong>PASO 2:</strong> Calculamos \\( f(x+h) \\):<br>\\( f(x+h) = ${fxh} \\)</p>
+          <p><strong>PASO 3:</strong> Diferencia entre \\( f(x+h) \\) y \\( f(x) \\):<br>\\( (${fxh}) - (${f}) \\)</p>
+          <p><strong>PASO 4:</strong> Aplicamos la fórmula formal:<br>\\[ \\frac{f(x+h) - f(x)}{h} = \\frac{(${fxh}) - (${f})}{h} \\]</p>
+          <p><strong>PASO 5:</strong> Aplicamos el límite cuando \\( h \\to 0 \\)</p>
+          <p><strong>PASO 6:</strong> \\[ \\lim_{h \\to 0} \\frac{${paso7}}{h} \\]</p>
+          <p><strong>PASO 7:</strong> Simplificamos numerador: \\( ${paso7} \\)<br>Dividimos entre h: \\( ${paso8} \\)</p>
+          <p><strong>PASO 8:</strong> Finalmente, aplicamos el límite:<br><strong>\\( f'(x) = ${derivada} \\)</strong></p>
+        `;
+        MathJax.typeset();
 
-        pasosDiv.textContent = pasos;
-        graficar(input);
-      } catch (e) {
-        pasosDiv.innerHTML = "⚠️ No se pudo derivar la función ingresada.<br>Revisa la sintaxis o funciones usadas.";
-      }
-    }
-
-    function graficar(funcion) {
-      const ctx = document.getElementById("grafico").getContext("2d");
-      const puntosX = [], puntosY = [];
-      for (let x = -10; x <= 10; x += 0.5) {
-        try {
-          const y = math.evaluate(funcion, { x });
-          puntosX.push(x);
-          puntosY.push(y);
-        } catch (_) {
-          puntosX.push(x);
-          puntosY.push(null);
-        }
-      }
-
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: puntosX,
-          datasets: [{
-            label: "f(x)",
-            data: puntosY,
-            borderWidth: 2,
-            fill: false,
-          }],
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { title: { display: true, text: "x" } },
-            y: { title: { display: true, text: "f(x)" } }
+        // Graficar
+        const ctx = document.getElementById('grafica').getContext('2d');
+        const fEval = x => eval(Algebrite.run(f).replace(/x/g, `(${x})`));
+        const xValues = [], yValues = [];
+        for (let x = -10; x <= 10; x += 0.5) {
+          xValues.push(x);
+          try {
+            yValues.push(fEval(x));
+          } catch {
+            yValues.push(null);
           }
-        },
-      });
+        }
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: xValues,
+            datasets: [{
+              label: `f(x) = ${funcionOriginal}`,
+              data: yValues,
+              borderWidth: 2,
+              borderColor: '#d63384',
+              fill: false
+            }]
+          },
+          options: {
+            scales: {
+              x: { title: { display: true, text: 'x' } },
+              y: { title: { display: true, text: 'f(x)' } }
+            }
+          }
+        });
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('resultado').innerHTML = `<p class="error">⚠️ No se pudo derivar la función ingresada.<br>Revisa la sintaxis o funciones usadas.</p>`;
+      }
     }
   </script>
 </body>
-
 </html>
 
