@@ -75,19 +75,15 @@
 <script>
   function transformarFuncion(input) {
     let f = input.toLowerCase();
-    // Reemplazos para que JS entienda la función
     f = f.replace(/raiz\(/g, "Math.sqrt(");
     f = f.replace(/ln\(/g, "Math.log(");
-    // Reemplazar e^x o e^(expresion)
     f = f.replace(/e\^(\([^)]+\)|[a-z0-9]+)/g, function(match, p1) {
       return "Math.exp(" + p1 + ")";
     });
     f = f.replace(/sin\(/g, "Math.sin(");
     f = f.replace(/cos\(/g, "Math.cos(");
     f = f.replace(/tan\(/g, "Math.tan(");
-    // Potencias: x2 => x**2 y también x^2 => x**2
     f = f.replace(/([a-z0-9\)])\^?(\d+)/g, "$1**$2");
-    // Limpiar espacios
     f = f.replace(/\s+/g, "");
     return f;
   }
@@ -116,6 +112,7 @@
       return;
     }
 
+    const fOriginal = inputFunc;
     const f = transformarFuncion(inputFunc);
 
     const h = 0.00001;
@@ -131,23 +128,54 @@
 
     const diffApprox = (fxh - fx0) / h;
 
-    // Mostrar pasos con explicación clara
+    let regPot = /x\*\*(\d+)/;
+    let potencia = null;
+    let derivPot = null;
+
+    const matchPot = f.match(regPot);
+    if (matchPot) {
+      potencia = parseInt(matchPot[1]);
+      derivPot = potencia * Math.pow(x0, potencia -1);
+    }
+
     let pasosHTML = "";
 
-    pasosHTML += `<div class="paso"><b>Paso 1:</b> Definición de la derivada por primer principio:<br>
-      <em>f'(x) = lim<sub>h→0</sub> [f(x+h) - f(x)] / h</em></div>`;
+    pasosHTML += `<div class="paso"><b>Paso 1:</b> Escribir la fórmula de la derivada por primer principio:<br>
+    <div style="font-size:18px; margin:8px 0;">
+      f'(x) = lim<sub>h→0</sub> <span style="display:inline-block; border:1px solid #d6336c; padding:2px 8px; border-radius:6px; background:#ffe6f0;">
+        [f(x+h) - f(x)] / h
+      </span>
+    </div>
+    </div>`;
 
-    pasosHTML += `<div class="paso"><b>Paso 2:</b> Sustituimos x = ${x0} y un valor pequeño h = ${h}:<br>
-      f'(${x0}) ≈ [f(${x0} + ${h}) - f(${x0})] / ${h}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 2:</b> Sustituir el valor x = ${x0} y un valor pequeño h = ${h} para aproximar la derivada:</div>`;
 
-    pasosHTML += `<div class="paso"><b>Paso 3:</b> Calculamos f(${(x0 + h).toFixed(5)}) = ${fxh.toFixed(6)}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 3:</b> Calcular f(${x0} + h) = f(${(x0 + h).toFixed(8)})<br>
+      f(${(x0 + h).toFixed(8)}) ≈ ${fxh.toFixed(8)}</div>`;
 
-    pasosHTML += `<div class="paso"><b>Paso 4:</b> Calculamos f(${x0}) = ${fx0.toFixed(6)}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 4:</b> Calcular f(${x0}):<br>
+      f(${x0}) = ${fx0.toFixed(8)}</div>`;
 
-    pasosHTML += `<div class="paso"><b>Paso 5:</b> Calculamos la diferencia y dividimos por h:<br>
-      [${fxh.toFixed(6)} - ${fx0.toFixed(6)}] / ${h} = ${diffApprox.toFixed(6)}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 5:</b> Calcular la diferencia del numerador:<br>
+      f(${(x0 + h).toFixed(8)}) - f(${x0}) = ${(fxh - fx0).toFixed(8)}</div>`;
 
-    pasosHTML += `<div class="paso"><b>Resultado aproximado:</b> f'(${x0}) ≈ ${diffApprox.toFixed(6)}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 6:</b> Dividir la diferencia entre h:<br>
+      [f(${(x0 + h).toFixed(8)}) - f(${x0})] / ${h} = ${diffApprox.toFixed(8)}</div>`;
+
+    pasosHTML += `<div class="paso"><b>Paso 7:</b> Aproximación del límite:<br>
+      f'(${x0}) ≈ ${diffApprox.toFixed(8)}</div>`;
+
+    if (potencia !== null) {
+      pasosHTML += `<div class="paso" style="background:#ffe6f0; border-color:#d6336c;"><b>Paso 8 (Regla de la potencia):</b><br>
+        Para <em>f(x) = x<sup>${potencia}</sup></em>, la derivada es:<br>
+        <em>f'(x) = ${potencia}·x<sup>${potencia - 1}</sup></em><br>
+        Evaluando en x = ${x0}:<br>
+        f'(${x0}) = ${potencia} · ${x0}<sup>${potencia -1}</sup> = ${derivPot.toFixed(8)}</div>`;
+    } else {
+      pasosHTML += `<div class="paso" style="background:#ffe6f0; border-color:#d6336c;"><b>Paso 8:</b><br>
+        No aplica regla de potencia simple para esta función.<br>
+        Resultado aproximado final: <b>${diffApprox.toFixed(8)}</b></div>`;
+    }
 
     resultDiv.innerHTML = pasosHTML;
 
@@ -269,7 +297,5 @@
 </script>
 </body>
 </html>
-
-
 
 
