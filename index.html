@@ -1,96 +1,137 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Derivadas Paso a Paso</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/algebrite/1.2.0/algebrite.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.3.1/math.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Derivadas por Primer Principio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/algebrite/1.5.0/algebrite.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #fff0f5;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f4fb;
       color: #333;
-      padding: 20px;
     }
     h1 {
-      color: #d63384;
+      color: #c71585;
     }
     input, button {
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin: 5px 0;
+      margin: 10px 0;
+      font-size: 16px;
     }
-    button {
-      background-color: #d63384;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .resultado {
-      background-color: #ffe6f0;
-      border-left: 4px solid #d63384;
-      padding: 10px;
+    #pasos {
+      background-color: #fff0f5;
+      border-left: 5px solid #c71585;
+      padding: 15px;
       margin-top: 20px;
-      border-radius: 8px;
+      white-space: pre-wrap;
     }
-    .paso {
-      margin-bottom: 15px;
+    canvas {
+      margin-top: 30px;
     }
   </style>
 </head>
-<body>
-  <h1>Calculadora de Derivadas Paso a Paso 💖</h1>
-  <label for="funcion">Ingresa una función:</label><br/>
-  <input type="text" id="funcion" placeholder="Ej: raiz(x), 2x, e^x, ln(x), sin(x)"/><br/>
-  <button onclick="calcularDerivada()">Derivar</button>
 
-  <div id="resultado" class="resultado"></div>
+<body>
+  <h1>Calculadora de Derivadas por Primer Principio</h1>
+  <label for="funcion">Ingresa una función:</label><br />
+  <input type="text" id="funcion" placeholder="Ej: raiz(x), ln(x), e^x, x^2" size="40" />
+  <br />
+  <button onclick="resolverDerivada()">Calcular derivada</button>
+  <div id="pasos"></div>
+  <canvas id="grafico" width="400" height="300"></canvas>
 
   <script>
-    function preprocesarFuncion(fx) {
-      fx = fx.toLowerCase();
-      fx = fx.replace(/ln\(/g, "log(");
-      fx = fx.replace(/e\^/g, "exp(").replace(/\)\)/g, "))");
-      fx = fx.replace(/ra[ií]z\(/g, "sqrt(");
-      fx = fx.replace(/(\d)([a-zA-Z\(])/g, '$1*$2'); // 2x, 5(x+1) → 2*x, 5*(x+1)
-      fx = fx.replace(/([a-zA-Z\)])(\d)/g, '$1*$2'); // x2 → x*2
-      fx = fx.replace(/\s+/g, ''); // elimina espacios
-      return fx;
+    function reemplazarFunciones(texto) {
+      return texto
+        .replace(/\b(raiz)\s*\(x\)/gi, 'sqrt(x)')
+        .replace(/\be\^x\b/gi, 'exp(x)')
+        .replace(/\bln\s*\(/gi, 'log(')
+        .replace(/(\d)(x)/gi, '$1*$2')
+        .replace(/\^/g, '**');
     }
 
-    function calcularDerivada() {
-      const entrada = document.getElementById('funcion').value;
-      const funcionProcesada = preprocesarFuncion(entrada);
+    function resolverDerivada() {
+      const inputOriginal = document.getElementById("funcion").value.trim();
+      if (!inputOriginal) return alert("Ingresa una función válida.");
+
+      const input = reemplazarFunciones(inputOriginal);
+      let pasosDiv = document.getElementById("pasos");
+      let fx;
 
       try {
-        const derivada = Algebrite.run("derivative(" + funcionProcesada + ")");
-        mostrarPasos(funcionProcesada, derivada);
-      } catch (error) {
-        document.getElementById("resultado").innerHTML = 
-          "<strong style='color:red;'>⚠️ No se pudo derivar la función ingresada.</strong><br>Revisa la sintaxis o funciones usadas.";
+        fx = Algebrite.run(input);
+        const h = "h";
+        const x = "x";
+        const fxh = Algebrite.run(`subst(${x}+${h},${x},${fx})`);
+        const resta = Algebrite.run(`(${fxh})-(${fx})`);
+        const fraccion = Algebrite.run(`(${resta})/${h}`);
+        const limite = Algebrite.run(`limit((${fraccion}), ${h}, 0)`);
+
+        let pasos = `PASOS PARA DERIVAR SEGÚN EL PRIMER PRINCIPIO:\n`;
+        pasos += `1. Se parte de la definición formal de derivada:\n`;
+        pasos += `    f'(x) = lim(h→0) [f(x+h) - f(x)] / h\n\n`;
+        pasos += `2. Se reemplaza f(x) por la función ingresada:\n`;
+        pasos += `    f(x) = ${fx}\n\n`;
+        pasos += `3. Se calcula f(x+h):\n`;
+        pasos += `    f(x+h) = ${fxh}\n\n`;
+        pasos += `4. Se resta f(x+h) - f(x):\n`;
+        pasos += `    ${fxh} - (${fx}) = ${resta}\n\n`;
+        pasos += `5. Se forma la fracción (f(x+h) - f(x)) / h:\n`;
+        pasos += `    (${resta}) / h = ${fraccion}\n\n`;
+        pasos += `6. Se aplica el límite cuando h tiende a 0:\n`;
+        pasos += `    lim(h→0) [${fraccion}] = ${limite}\n\n`;
+        pasos += `7. El resultado de este límite es la derivada f'(x):\n`;
+        pasos += `    f'(x) = ${limite}\n\n`;
+        pasos += `8. La derivada de ${fx} es: ${limite}`;
+
+        pasosDiv.textContent = pasos;
+        graficar(input);
+      } catch (e) {
+        pasosDiv.innerHTML = "⚠️ No se pudo derivar la función ingresada.<br>Revisa la sintaxis o funciones usadas.";
       }
     }
 
-    function mostrarPasos(fx, deriv) {
-      const pasosHTML = `
-        <div class="paso"><strong>Paso 1:</strong> Se define la función como f(x) = ${fx}</div>
-        <div class="paso"><strong>Paso 2:</strong> Se aplica la definición formal de derivada:</div>
-        <div class="paso"><code>f'(x) = lim(h→0) [(f(x+h) - f(x)) / h]</code></div>
-        <div class="paso"><strong>Paso 3:</strong> Sustituimos f(x+h):</div>
-        <div class="paso">f(x+h) = ${Algebrite.run("subst(x," + fx + ",x+h)")}</div>
-        <div class="paso"><strong>Paso 4:</strong> Restamos f(x+h) - f(x)</div>
-        <div class="paso">${Algebrite.run("simplify(subst(x," + fx + ",x+h) - (" + fx + "))")}</div>
-        <div class="paso"><strong>Paso 5:</strong> Dividimos entre h:</div>
-        <div class="paso">${Algebrite.run("simplify((" + Algebrite.run("subst(x," + fx + ",x+h) - (" + fx + ")") + ")/h)")}</div>
-        <div class="paso"><strong>Paso 6:</strong> Calculamos el límite cuando h → 0</div>
-        <div class="paso">${Algebrite.run("limit((" + Algebrite.run("subst(x," + fx + ",x+h) - (" + fx + ")") + ")/h, h, 0)")}</div>
-        <div class="paso"><strong>Paso 7:</strong> La derivada final es:</div>
-        <div class="paso"><strong>f'(x) = ${deriv}</strong></div>
-      `;
-      document.getElementById("resultado").innerHTML = pasosHTML;
+    function graficar(funcion) {
+      const ctx = document.getElementById("grafico").getContext("2d");
+      const puntosX = [], puntosY = [];
+      for (let x = -10; x <= 10; x += 0.5) {
+        try {
+          const y = math.evaluate(funcion, { x });
+          puntosX.push(x);
+          puntosY.push(y);
+        } catch (_) {
+          puntosX.push(x);
+          puntosY.push(null);
+        }
+      }
+
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: puntosX,
+          datasets: [{
+            label: "f(x)",
+            data: puntosY,
+            borderWidth: 2,
+            fill: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { title: { display: true, text: "x" } },
+            y: { title: { display: true, text: "f(x)" } }
+          }
+        },
+      });
     }
   </script>
 </body>
+
 </html>
+
