@@ -1,334 +1,162 @@
+<!-- ¡VERSIÓN COMPLETA con correcciones! -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Derivadas Paso a Paso - Primer Principio</title>
-    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/algebrite"></script>
-    <script src="https://www.desmos.com/api/v1.6/calculator.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px auto;
-            max-width: 900px;
-            background: #f9f9fb;
-            color: #222;
-            line-height: 1.4;
-        }
-        h1 {
-            text-align: center;
-            color: #2a2a72;
-        }
-        label {
-            font-weight: 600;
-            display: block;
-            margin-top: 15px;
-        }
-        input[type="text"] {
-            font-size: 1.1em;
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-        button {
-            margin-top: 20px;
-            background-color: #2a2a72;
-            color: white;
-            font-size: 1.1em;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;
-        }
-        button:hover {
-            background-color: #4040b0;
-        }
-        .steps {
-            margin-top: 25px;
-            background: white;
-            padding: 20px 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 8px #ccc;
-            font-size: 1em;
-            color: #111;
-        }
-        .step {
-            margin-bottom: 15px;
-        }
-        .fraction {
-            display: inline-block;
-            vertical-align: middle;
-            text-align: center;
-            margin: 0 4px;
-        }
-        .fraction > span {
-            display: block;
-            padding: 0 5px;
-        }
-        .fraction .num {
-            border-bottom: 1.5px solid #222;
-            font-weight: 700;
-            font-size: 1.2em;
-        }
-        .fraction .den {
-            font-size: 1.1em;
-        }
-        .formula {
-            font-family: 'Cambria Math', 'Times New Roman', serif;
-            background: #eef1f8;
-            padding: 8px 12px;
-            border-radius: 8px;
-            display: inline-block;
-            margin: 10px 0;
-        }
-        #graph {
-            margin-top: 30px;
-            height: 400px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-        }
-        .error {
-            color: #b00020;
-            font-weight: 700;
-            margin-top: 10px;
-        }
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 0.9em;
-            color: #555;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Derivadas por Primer Principio</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/algebrite"></script>
+  <script src="https://www.desmos.com/api/v1.6/calculator.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 20px auto;
+      max-width: 900px;
+      background: #fff4fa;
+      color: #222;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #d63384;
+    }
+    input, button {
+      font-size: 1.1em;
+      padding: 10px;
+      width: 100%;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #d63384;
+      color: white;
+      cursor: pointer;
+    }
+    .steps {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+      margin-top: 20px;
+    }
+    .step {
+      margin-bottom: 15px;
+    }
+    .fraction {
+      display: inline-block;
+      text-align: center;
+    }
+    .fraction .num {
+      border-bottom: 1px solid #000;
+    }
+    .graph {
+      height: 400px;
+      margin-top: 20px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <h1>Derivadas Paso a Paso por Primer Principio</h1>
 
-    <h1>Derivadas Paso a Paso: Definición Formal (Primer Principio)</h1>
+  <label for="funcion">Ingresa una función f(x):</label>
+  <input type="text" id="funcion" placeholder="Ej: x^2, ln(x), e^x, raiz(x), 2x + 3" />
 
-    <label for="functionInput">Ingrese una función de <em>x</em> (ejemplo: x^3, sin(x), e^x, ln(x), sqrt(x)):</label>
-    <input type="text" id="functionInput" placeholder="Ej: x^3 + 2*x - 5" autocomplete="off" />
+  <button onclick="calcular()">Calcular Derivada</button>
+  <div id="error" class="error"></div>
 
-    <button id="deriveBtn">Calcular derivada paso a paso</button>
+  <div class="steps" id="pasos" style="display:none;"></div>
+  <div id="resultado" style="font-weight:bold; margin-top:10px;"></div>
 
-    <div id="error" class="error"></div>
+  <div id="graph" class="graph"></div>
 
-    <div class="steps" id="stepsContainer" style="display:none;">
-        <h2>Desarrollo paso a paso:</h2>
-        <div id="steps"></div>
-        <h3>Resultado:</h3>
-        <p id="result" style="font-weight:700; font-size:1.2em;"></p>
-    </div>
+  <script>
+    const pasosDiv = document.getElementById('pasos');
+    const resultadoDiv = document.getElementById('resultado');
+    const errorDiv = document.getElementById('error');
 
-    <div id="graph"></div>
+    let calculator;
+    function initGraph() {
+      calculator = Desmos.GraphingCalculator(document.getElementById('graph'), {
+        expressions: true,
+        zoomButtons: true,
+        expressionsCollapsed: false
+      });
+    }
 
-    <footer>Creado por Sarita &copy; 2025</footer>
+    function corregirFuncion(f) {
+      return f
+        .replace(/ln\(/gi, "log(")
+        .replace(/e\^/gi, "exp(")
+        .replace(/raiz\(/gi, "sqrt(")
+        .replace(/raíz\(/gi, "sqrt(")
+        .replace(/([0-9])([a-z\(])/gi, "$1*$2")  // 2x → 2*x, 5(x+1) → 5*(x+1)
+        .replace(/([a-z])\(/gi, "$1*(");         // x(x+1) → x*(x+1)
+    }
 
-    <script>
-        // Utilidades para mostrar fracciones bonitas en HTML
-        function createFraction(numerator, denominator) {
-            return `<span class="fraction"><span class="num">${numerator}</span><span class="den">${denominator}</span></span>`;
-        }
+    function createFraction(num, den) {
+      return `<span class="fraction"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+    }
 
-        // Escapa html para evitar inyecciones o errores
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
+    function calcular() {
+      const input = document.getElementById('funcion').value.trim();
+      if (!input) return;
 
-        const deriveBtn = document.getElementById("deriveBtn");
-        const functionInput = document.getElementById("functionInput");
-        const stepsContainer = document.getElementById("stepsContainer");
-        const stepsDiv = document.getElementById("steps");
-        const resultP = document.getElementById("result");
-        const errorDiv = document.getElementById("error");
+      const fxOriginal = corregirFuncion(input);
+      const fxDisplay = input;
 
-        let calculator;
+      try {
+        // Derivada simbólica
+        const derivada = Algebrite.simplify(`d(${fxOriginal})`).toString();
 
-        // Inicializa la calculadora gráfica Desmos
-        function initGraph() {
-            const elt = document.getElementById('graph');
-            calculator = Desmos.GraphingCalculator(elt, {
-                expressions: true,
-                settingsMenu: false,
-                zoomButtons: true,
-                lockViewport: false,
-                expressionsCollapsed: false,
-                keypad: false,
-            });
-        }
+        // f(x + h)
+        const fxMasH = Algebrite.run(`subst(x, x + h, ${fxOriginal})`);
+        const fxMasHSimpl = Algebrite.run(`simplify(${fxMasH})`);
 
-        function safeEvalMathJs(expr, scope={x:0}) {
-            try {
-                return math.evaluate(expr, scope);
-            } catch {
-                return null;
-            }
-        }
+        // Numerador
+        const numerador = Algebrite.run(`simplify((${fxMasHSimpl}) - (${fxOriginal}))`);
+        const cociente = Algebrite.run(`simplify((${numerador})/h)`);
+        const limiteFinal = Algebrite.run(`subst(h, 0, ${cociente})`);
+        const derivadaFinal = Algebrite.run(`simplify(${limiteFinal})`);
 
-        function validateFunction(input) {
-            if (!input || input.trim() === "") return false;
-            // Solo permitir caracteres válidos básicos para math.js
-            const validChars = /^[0-9xX\+\-\*\/\^\.\(\)eEsSqRlLnNtIcAoGpMzY,\s]+$/i;
-            return validChars.test(input);
-        }
+        // Mostrar pasos
+        pasosDiv.innerHTML = `
+          <div class="step"><strong>1.</strong> Función dada: f(x) = ${fxDisplay}</div>
+          <div class="step"><strong>2.</strong> Aplicamos la definición formal:<br>
+            f'(x) = lim h→0 ${createFraction("f(x + h) - f(x)", "h")}
+          </div>
+          <div class="step"><strong>3.</strong> Sustituimos: <br>
+            ${createFraction(fxMasHSimpl + " - (" + fxOriginal + ")", "h")}
+          </div>
+          <div class="step"><strong>4.</strong> Simplificamos el numerador:<br>${numerador}</div>
+          <div class="step"><strong>5.</strong> Dividimos entre h:<br>${cociente}</div>
+          <div class="step"><strong>6.</strong> Tomamos el límite cuando h → 0:<br>${derivadaFinal}</div>
+          <div class="step"><strong>7.</strong> Resultado final:<br>f'(x) = <strong>${derivadaFinal}</strong></div>
+        `;
+        resultadoDiv.innerHTML = `✅ La derivada de f(x) = ${fxDisplay} es: <strong>f'(x) = ${derivadaFinal}</strong>`;
+        pasosDiv.style.display = 'block';
+        errorDiv.textContent = '';
 
-        // Convierte texto para que Algebrite entienda (e.g. sqrt -> sqrt, ln-> log, e^x -> exp(x))
-        function preprocessForAlgebrite(expr) {
-            let res = expr.toLowerCase();
-            res = res.replace(/ln/g, "log");
-            res = res.replace(/sqrt/g, "sqrt");
-            res = res.replace(/e\^/g, "exp");
-            // elimina espacios
-            res = res.replace(/\s+/g, "");
-            return res;
-        }
+        // Mostrar gráfica
+        if (!calculator) initGraph();
+        calculator.setExpression({ id: 'f', latex: `f(x) = ${fxDisplay}` });
+        calculator.setExpression({ id: 'fprime', latex: `f'(x) = ${derivadaFinal}`, color: Desmos.Colors.BLUE });
 
-        deriveBtn.addEventListener("click", () => {
-            errorDiv.textContent = "";
-            stepsContainer.style.display = "none";
-            stepsDiv.innerHTML = "";
-            resultP.textContent = "";
+      } catch (e) {
+        console.log(e);
+        errorDiv.textContent = "❌ No se pudo derivar la función. Revisa si está bien escrita.";
+        pasosDiv.style.display = 'none';
+        resultadoDiv.textContent = '';
+      }
+    }
 
-            let funcText = functionInput.value.trim();
-
-            if (!validateFunction(funcText)) {
-                errorDiv.textContent = "Función inválida. Use sólo funciones matemáticas válidas (x, +, -, *, /, ^, sin, cos, ln, e, sqrt, etc.)";
-                return;
-            }
-
-            // Preprocesar para Algebrite y mathjs
-            let funcForAlgebrite = preprocessForAlgebrite(funcText);
-
-            // Intentar derivar simbólicamente para verificar que sea válida
-            let derivativeSym;
-            try {
-                derivativeSym = Algebrite.run(`d(${funcForAlgebrite})`);
-                if (!derivativeSym || derivativeSym.includes("d(")) throw new Error("No se pudo derivar");
-            } catch (e) {
-                errorDiv.textContent = "No se pudo derivar la función ingresada. Revisa sintaxis o funciones usadas.";
-                return;
-            }
-
-            // Limite h->0 de [f(x+h) - f(x)]/h (definición formal)
-            // Vamos a construir los pasos con texto y matemática en HTML
-
-            const h = 'h';
-            const x = 'x';
-
-            // Paso 1: Escribir la función f(x)
-            let step1 = `<div class="step"><b>1. Función dada:</b> f(x) = <span class="formula">${escapeHtml(funcText)}</span></div>`;
-
-            // Paso 2: Definición formal de la derivada (primer principio)
-            let formulaDef = `f'(x) = \\lim_{h \\to 0} ${createFraction(`f(x + h) - f(x)`, `h`)}`;
-            // Lo vamos a mostrar con HTML + fracciones, usando la función createFraction
-            let step2 = `<div class="step"><b>2. Definición formal de derivada (primer principio):</b><br>
-                \\[
-                f'(x) = \\lim_{h \\to 0} ${createFraction('f(x + h) - f(x)', 'h')}
-                \\]
-                <br>
-                Esto significa calcular el límite cuando h tiende a 0 del cociente incremental.
-            </div>`;
-
-            // Paso 3: Sustituimos f(x+h) y f(x)
-            let fxh = funcText.replace(/x/g, `(x + h)`); // sustitución simple, para mostrar
-            let fx = funcText;
-
-            // Mejor usando math.js para escribir bien con paréntesis y evitar errores:
-            // Pero para mostrar al usuario, se hace simple:
-
-            let step3 = `<div class="step"><b>3. Sustituir en el cociente:</b><br>
-                <span class="formula">
-                \\frac{f(x + h) - f(x)}{h} = 
-                \\frac{${escapeHtml(fxh)} - ${escapeHtml(fx)}}{h}
-                </span><br>
-                Explicación: Evaluamos la función en (x+h) y restamos la función en x.
-            </div>`;
-
-            // Paso 4: Expandir f(x+h)
-            // Aquí hacemos la expansión simbólica para mostrar el paso
-
-            // Usamos Algebrite para calcular f(x+h)
-            let f_xph_algebrite = Algebrite.run(`subst(x, x+h, ${funcForAlgebrite})`);
-            f_xph_algebrite = Algebrite.run(`simplify(${f_xph_algebrite})`);
-
-            // Paso 4 texto
-            let step4 = `<div class="step"><b>4. Expandir y simplificar f(x+h):</b><br>
-                f(x+h) = <span class="formula">${escapeHtml(f_xph_algebrite)}</span>
-            </div>`;
-
-            // Paso 5: Escribir el cociente completo (f(x+h)-f(x))/h con la expansión
-            let step5 = `<div class="step"><b>5. Escribir el cociente:</b><br>
-                <span class="formula">
-                \\frac{${escapeHtml(f_xph_algebrite)} - ${escapeHtml(funcForAlgebrite)}}{h}
-                </span>
-            </div>`;
-
-            // Paso 6: Simplificar el numerador (f(x+h) - f(x))
-            // Realizamos la resta y simplificación con Algebrite
-            let numeratorSub = Algebrite.run(`simplify((${f_xph_algebrite}) - (${funcForAlgebrite}))`);
-
-            let step6 = `<div class="step"><b>6. Simplificar numerador:</b><br>
-                Numerador = <span class="formula">${escapeHtml(numeratorSub)}</span>
-            </div>`;
-
-            // Paso 7: Simplificar el cociente dividiendo por h
-            // Dividimos la expresión anterior por h y simplificamos
-            let cociente = Algebrite.run(`simplify((${numeratorSub})/h)`);
-
-            let step7 = `<div class="step"><b>7. Simplificar el cociente dividiendo por h:</b><br>
-                <span class="formula">${escapeHtml(cociente)}</span>
-            </div>`;
-
-            // Paso 8: Evaluar el límite cuando h -> 0
-            // Sustituimos h=0 en la expresión simplificada
-            // Usamos math.js para evaluar la expresión (reemplazando h=0)
-
-            // Para evaluar h=0 con mathjs, usamos math.evaluate, 
-            // pero primero pasamos cociente a expresión mathjs con variables h y x
-            // Es posible que haya diferencias entre sintaxis algebrite y mathjs, intentamos reemplazar
-
-            let cocienteMathJsExpr = cociente
-                .replace(/exp/g, "exp")
-                .replace(/log/g, "log")
-                .replace(/\*/g, "*")
-                .replace(/\^/g, "**")
-                .replace(/h/g, "(0)");
-
-            // Como la expresión puede contener x, dejamos que x sea variable
-
-            // Evaluar límite cuando h->0: simplemente sustituimos h=0 y dejamos x simbólico
-            // Para mostrar texto
-            let step8 = `<div class="step"><b>8. Evaluar límite cuando h → 0 (es decir, h=0):</b><br>
-                Sustituimos h=0 en la expresión:<br>
-                <span class="formula">${escapeHtml(cociente)}</span><br>
-                Resultado (derivada): <span class="formula">${escapeHtml(derivativeSym)}</span>
-            </div>`;
-
-            // Mostrar resultado con explicación simple
-            let resultText = `La derivada de f(x) = ${funcText} es:<br>
-                              <strong>f'(x) = ${derivativeSym}</strong>`;
-
-            // Mostrar todo junto
-            stepsDiv.innerHTML = step1 + step2 + step3 + step4 + step5 + step6 + step7 + step8;
-            resultP.innerHTML = resultText;
-            stepsContainer.style.display = "block";
-
-            // Graficar función y derivada en Desmos
-            if (!calculator) initGraph();
-
-            calculator.setExpression({ id: 'func', latex: `f(x) = ${funcText}` });
-            calculator.setExpression({ id: 'deriv', latex: `f'(x) = ${derivativeSym}`, color: Desmos.Colors.BLUE });
-
-        });
-
-        initGraph();
-
-    </script>
-
+    initGraph();
+  </script>
 </body>
 </html>
