@@ -41,10 +41,7 @@
       max-width: 700px;
       margin: auto;
       box-shadow: 0 0 10px #d6336c55;
-    }
-    #resultados p {
-      margin: 8px 0;
-      line-height: 1.5;
+      white-space: pre-wrap;
     }
     .paso {
       margin-bottom: 12px;
@@ -76,33 +73,27 @@
   <canvas id="grafica" width="600" height="400"></canvas>
 
 <script>
-  // Función para reemplazar la notación común por la que Algebrite entiende
   function transformarFuncion(input) {
     let f = input.toLowerCase();
-    // Reemplazos comunes
-    f = f.replace(/raiz\(/g, "sqrt(");
-    f = f.replace(/e\^/g, "exp");
-    f = f.replace(/ln\(/g, "log(");
-    // Para potencias: x2 => x^2 (solo para potencias simples)
-    f = f.replace(/([a-z0-9\)])(\d+)/g, "$1^$2");
+    // Reemplazos para que JS entienda la función
+    f = f.replace(/raiz\(/g, "Math.sqrt(");
+    f = f.replace(/ln\(/g, "Math.log(");
+    // Reemplazar e^x o e^(expresion)
+    f = f.replace(/e\^(\([^)]+\)|[a-z0-9]+)/g, function(match, p1) {
+      return "Math.exp(" + p1 + ")";
+    });
+    f = f.replace(/sin\(/g, "Math.sin(");
+    f = f.replace(/cos\(/g, "Math.cos(");
+    f = f.replace(/tan\(/g, "Math.tan(");
+    // Potencias: x2 => x**2 y también x^2 => x**2
+    f = f.replace(/([a-z0-9\)])\^?(\d+)/g, "$1**$2");
     // Limpiar espacios
     f = f.replace(/\s+/g, "");
     return f;
   }
 
-  // Función para evaluar expresiones con Math.js (alternativa si no usas Algebrite)
-  // Aquí usaremos Algebrite para derivadas, pero para primer principio haremos manualmente.
-
-  // Vamos a usar Algebrite para simplificar la función f(x+h) - f(x), pero
-  // para que sea más accesible, usaremos math.js para evaluar (porque Algebrite no está aquí)
-  // Por eso, para esta demo usaremos evaluaciones numéricas y el desarrollo manual de pasos.
-
-  // Evaluar la función para un valor x (función en texto)
   function evaluarFuncion(fx, val) {
-    // fx: string transformada compatible con Math.js o eval seguro
-    // Para seguridad, solo permitiremos funciones matemáticas básicas
     try {
-      // Construimos la función con 'x' variable
       const mathFunc = new Function("x", "return " + fx + ";");
       return mathFunc(val);
     } catch (e) {
@@ -125,12 +116,11 @@
       return;
     }
 
-    // Transformar la función para evaluarla con JS
     const f = transformarFuncion(inputFunc);
 
-    // Revisar si la función se puede evaluar al menos en x=1 y x=1+h
     const h = 0.00001;
     const x0 = 1;
+
     const fx0 = evaluarFuncion(f, x0);
     const fxh = evaluarFuncion(f, x0 + h);
 
@@ -139,10 +129,9 @@
       return;
     }
 
-    // Calcular límite de la definición
     const diffApprox = (fxh - fx0) / h;
 
-    // Mostrar pasos
+    // Mostrar pasos con explicación clara
     let pasosHTML = "";
 
     pasosHTML += `<div class="paso"><b>Paso 1:</b> Definición de la derivada por primer principio:<br>
@@ -151,7 +140,7 @@
     pasosHTML += `<div class="paso"><b>Paso 2:</b> Sustituimos x = ${x0} y un valor pequeño h = ${h}:<br>
       f'(${x0}) ≈ [f(${x0} + ${h}) - f(${x0})] / ${h}</div>`;
 
-    pasosHTML += `<div class="paso"><b>Paso 3:</b> Calculamos f(${x0} + ${h}) = f(${(x0 + h).toFixed(5)}) ≈ ${fxh.toFixed(6)}</div>`;
+    pasosHTML += `<div class="paso"><b>Paso 3:</b> Calculamos f(${(x0 + h).toFixed(5)}) = ${fxh.toFixed(6)}</div>`;
 
     pasosHTML += `<div class="paso"><b>Paso 4:</b> Calculamos f(${x0}) = ${fx0.toFixed(6)}</div>`;
 
@@ -162,7 +151,6 @@
 
     resultDiv.innerHTML = pasosHTML;
 
-    // Graficar función y su derivada aproximada (numérica) en x desde -5 a 5
     graficarFuncionYDerivada(f);
   }
 
@@ -175,8 +163,8 @@
     ctx.clearRect(0, 0, w, h);
 
     // Dibujar cuadrícula
-    const step = 20; // pixels por unidad
-    ctx.strokeStyle = "#f8bbd0"; // rosado claro
+    const step = 20;
+    ctx.strokeStyle = "#f8bbd0";
     ctx.lineWidth = 1;
 
     for(let x=0; x <= w; x += step) {
@@ -194,20 +182,19 @@
     }
 
     // Ejes
-    ctx.strokeStyle = "#d6336c"; // rosado fuerte
+    ctx.strokeStyle = "#d6336c";
     ctx.lineWidth = 2;
-    // eje X
     ctx.beginPath();
     ctx.moveTo(0, h/2);
     ctx.lineTo(w, h/2);
     ctx.stroke();
-    // eje Y
+
     ctx.beginPath();
     ctx.moveTo(w/2, 0);
     ctx.lineTo(w/2, h);
     ctx.stroke();
 
-    // Función para transformar coordenadas matemáticas a canvas
+    // Funciones para transformar coordenadas matemáticas a canvas
     function toCanvasX(x) {
       return w/2 + x*step;
     }
@@ -215,7 +202,7 @@
       return h/2 - y*step;
     }
 
-    // Evaluar f(x) y derivada numérica en varios puntos
+    // Evaluar f(x) y derivada numérica
     const xs = [];
     const ys = [];
     const dys = [];
@@ -226,7 +213,6 @@
       const y = evaluarFuncion(fx, i);
       ys.push(y);
 
-      // derivada numérica por definición
       const yDer = (evaluarFuncion(fx, i + hDer) - evaluarFuncion(fx, i)) / hDer;
       dys.push(yDer);
     }
@@ -253,7 +239,7 @@
     ctx.stroke();
 
     // Dibujar derivada aproximada
-    ctx.strokeStyle = "#f06292"; // rosa claro
+    ctx.strokeStyle = "#f06292";
     ctx.lineWidth = 2;
     ctx.beginPath();
     first = true;
@@ -283,6 +269,7 @@
 </script>
 </body>
 </html>
+
 
 
 
